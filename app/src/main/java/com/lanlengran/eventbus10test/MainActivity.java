@@ -10,15 +10,23 @@ import de.greenrobot.event.EventBus;
 
 public class MainActivity extends BaseActivity {
     private static final String TAG = "MainActivity";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         EventBus.getDefault().register(this);
+        EventBus.getDefault().register(this, "OnEventTest", EventBus.ThreadMode.PostThread);
     }
+
     public void onEvent(AnyEventType event) {
-        Log.d(TAG, "onEvent: 我收到消息的线程"+Thread.currentThread().getName());
-        Log.d(TAG, "onEvent: 收到消息"+event.getText());
+        Log.d(TAG, "onEvent: 我收到消息的线程" + Thread.currentThread().getName());
+        Log.d(TAG, "onEvent: 收到消息" + event.getText());
+    }
+
+    public void OnEventTest(String event) {
+        Log.d(TAG, "OnEventTest: 我收到消息的线程" + Thread.currentThread().getName());
+        Log.d(TAG, "OnEventTest: 收到消息" + event);
     }
 
 
@@ -28,7 +36,7 @@ public class MainActivity extends BaseActivity {
         EventBus.getDefault().unregister(this);
     }
 
-    public void click(View view){
-        startActivity(new Intent(this,SecondActivity.class));
+    public void click(View view) {
+        startActivity(new Intent(this, SecondActivity.class));
     }
 }

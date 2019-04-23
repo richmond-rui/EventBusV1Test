@@ -29,5 +29,6 @@ public class SecondActivity extends AppCompatActivity {
         Log.d("MainActivity", "run: 我运行在线程"+Thread.currentThread().getName());
         EventBus.getDefault().post(new AnyEventType("这是第二个页面传递过来的"));
         EventBus.getDefault().post(new SecEventType("这是第二个页面传递过来的"));
+        EventBus.getDefault().post("233333");
     }
 }

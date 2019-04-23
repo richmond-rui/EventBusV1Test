@@ -31,19 +31,25 @@ import android.util.Log;
 
 /**
  * Class based event bus, optimized for Android. By default, subscribers will handle events in methods named "onEvent".
- * 
+ *
  * @author Markus Junginger, greenrobot
  */
 public class EventBus {
-    /** Log tag, apps may override it. */
+    /**
+     * Log tag, apps may override it.
+     */
     public static String TAG = "Event";
 
     private static final EventBus defaultInstance = new EventBus();
 
     public enum ThreadMode {
-        /** Subscriber will be called in the same thread, which is posting the event. */
+        /**
+         * Subscriber will be called in the same thread, which is posting the event.
+         */
         PostThread,
-        /** Subscriber will be called in Android's main thread (sometimes referred to as UI thread). */
+        /**
+         * Subscriber will be called in Android's main thread (sometimes referred to as UI thread).
+         */
         MainThread,
         /* BackgroundThread */
     }
@@ -95,6 +101,22 @@ public class EventBus {
         for (Method method : subscriberMethods) {
             Class<?> eventType = method.getParameterTypes()[0];
             subscribe(subscriber, method, eventType, threadMode);
+        }
+
+        for (CopyOnWriteArrayList<Subscription> bean :
+                subscriptionsByEventType.values()) {
+                Log.d("EventBus","subscriptionsByEventType==");
+            for (int i=0;i<bean.size();i++){
+                Log.d("EventBus","=========================="+bean.get(i).subscriber.getClass().getName()+"."+bean.get(i).method.getName());
+            }
+        }
+
+        for (List<Class<?>> bean :
+                typesBySubscriber.values()) {
+            Log.d("EventBus","typesBySubscriber==");
+            for (int i=0;i<bean.size();i++){
+                Log.d("EventBus","=========================="+bean.get(i).getName());
+            }
         }
     }
 
@@ -158,7 +180,7 @@ public class EventBus {
     }
 
     public synchronized void register(Object subscriber, String methodName, ThreadMode threadMode, Class<?> eventType,
-            Class<?>... moreEventTypes) {
+                                      Class<?>... moreEventTypes) {
         Class<?> subscriberClass = subscriber.getClass();
         Method method = findSubscriberMethod(subscriberClass, methodName, eventType);
         subscribe(subscriber, method, eventType, threadMode);
@@ -170,11 +192,16 @@ public class EventBus {
     }
 
     private void subscribe(Object subscriber, Method subscriberMethod, Class<?> eventType, ThreadMode threadMode) {
+        //根据参数类型从map取出CopyOnWriteArrayList
         CopyOnWriteArrayList<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
         if (subscriptions == null) {
+            //如果没有找到对应的列表，则新建一个空列表，并存入map
             subscriptions = new CopyOnWriteArrayList<Subscription>();
             subscriptionsByEventType.put(eventType, subscriptions);
         } else {
+            //如果同一个对象，同一个方法名，则抛出异常。也就意味在同一个对象里面，不能写两个参数类型完全一样的订阅事件
+            //但是允许同一个对象拥有多个参数不同的订阅事件
+            //或者不同对象拥有同种参数类型的订阅事件
             for (Subscription subscription : subscriptions) {
                 if (subscription.subscriber == subscriber) {
                     throw new RuntimeException("Subscriber " + subscriber.getClass() + " already registered to event "
@@ -182,16 +209,19 @@ public class EventBus {
                 }
             }
         }
-
+        //取消java的权限控制，这样可以访问private等的方法
         subscriberMethod.setAccessible(true);
+        //将订阅相关内容封装成一个对象
         Subscription subscription = new Subscription(subscriber, subscriberMethod, threadMode);
         subscriptions.add(subscription);
 
         List<Class<?>> subscribedEvents = typesBySubscriber.get(subscriber);
         if (subscribedEvents == null) {
+            //给每个订阅对象添加一个列表
             subscribedEvents = new ArrayList<Class<?>>();
             typesBySubscriber.put(subscriber, subscribedEvents);
         }
+        //给订阅对象的订阅方法列表，添加一个订阅类型
         subscribedEvents.add(eventType);
     }
 
@@ -212,7 +242,9 @@ public class EventBus {
                 + " (must have single parameter of event type " + eventType + ")");
     }
 
-    /** Unregisters the given subscriber for the given event classes. */
+    /**
+     * Unregisters the given subscriber for the given event classes.
+     */
     public synchronized void unregister(Object subscriber, Class<?>... eventTypes) {
         if (eventTypes.length == 0) {
             throw new IllegalArgumentException("Provide at least one event class");
@@ -231,7 +263,9 @@ public class EventBus {
         }
     }
 
-    /** Only updates subscriptionsByEventType, not typesBySubscriber! Caller must update typesBySubscriber. */
+    /**
+     * Only updates subscriptionsByEventType, not typesBySubscriber! Caller must update typesBySubscriber.
+     */
     private void unubscribeByEventType(Object subscriber, Class<?> eventType) {
         List<Subscription> subscriptions = subscriptionsByEventType.get(eventType);
         if (subscriptions != null) {
@@ -246,7 +280,9 @@ public class EventBus {
         }
     }
 
-    /** Unregisters the given subscriber from all event classes. */
+    /**
+     * Unregisters the given subscriber from all event classes.
+     */
     public synchronized void unregister(Object subscriber) {
         List<Class<?>> subscribedTypes = typesBySubscriber.get(subscriber);
         if (subscribedTypes != null) {
@@ -259,18 +295,22 @@ public class EventBus {
         }
     }
 
-    /** Posts the given event to the event bus. */
+    /**
+     * Posts the given event to the event bus.
+     */
     public void post(Object event) {
         List<Object> eventQueue = currentThreadEventQueue.get();
         eventQueue.add(event);
 
         BooleanWrapper isPosting = currentThreadIsPosting.get();
+        //如果正在分发消息，则直接return
         if (isPosting.value) {
             return;
         } else {
             isPosting.value = true;
             try {
                 while (!eventQueue.isEmpty()) {
+                    //抛出列表的第一项，并从列表中移除
                     postSingleEvent(eventQueue.remove(0));
                 }
             } finally {
@@ -280,8 +320,10 @@ public class EventBus {
     }
 
     private void postSingleEvent(Object event) throws Error {
+        //查找到event事件类的包含自己，以及所有的父类，并将其存入列表中
         List<Class<?>> eventTypes = findEventTypes(event.getClass());
         boolean subscriptionFound = false;
+        //event事件有多少个父类
         int countTypes = eventTypes.size();
         for (int h = 0; h < countTypes; h++) {
             Class<?> clazz = eventTypes.get(h);
@@ -290,6 +332,7 @@ public class EventBus {
                 subscriptions = subscriptionsByEventType.get(clazz);
             }
             if (subscriptions != null) {
+                //一个event事件可能会被多个对象订阅，所以需要遍历
                 for (Subscription subscription : subscriptions) {
                     if (subscription.threadMode == ThreadMode.PostThread) {
                         postToSubscribtion(subscription, event);
@@ -307,7 +350,9 @@ public class EventBus {
         }
     }
 
-    /** Finds all Class objects including super classes and interfaces. */
+    /**
+     * Finds all Class objects including super classes and interfaces.
+     */
     private List<Class<?>> findEventTypes(Class<?> eventClass) {
         synchronized (eventTypesCache) {
             List<Class<?>> eventTypes = eventTypesCache.get(eventClass);
@@ -325,7 +370,9 @@ public class EventBus {
         }
     }
 
-    /** Recurses through super interfaces. */
+    /**
+     * Recurses through super interfaces.
+     */
     static void addInterfaces(List<Class<?>> eventTypes, Class<?>[] interfaces) {
         for (Class<?> interfaceClass : interfaces) {
             if (!eventTypes.contains(interfaceClass)) {
@@ -379,7 +426,9 @@ public class EventBus {
         }
     }
 
-    /** For ThreadLocal, much faster to set than storing a new Boolean. */
+    /**
+     * For ThreadLocal, much faster to set than storing a new Boolean.
+     */
     final static class BooleanWrapper {
         boolean value;
     }
