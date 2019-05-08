@@ -20,5 +20,18 @@
         android:layout_height="wrap_content"
         android:text="点击跳往页面二"
         android:onClick="click"
+        android:id="@+id/btn1"
+        />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="取消订阅"
+        android:onClick="click"
+        android:id="@+id/btn2"
+        />
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/imageview"
         />
 </LinearLayout>

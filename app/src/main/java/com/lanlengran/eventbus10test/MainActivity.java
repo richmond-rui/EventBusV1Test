@@ -5,6 +5,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
+
+import com.bumptech.glide.Glide;
+import com.lanlengran.eventbus10test.MyEventBus.MyEventBus;
 
 import de.greenrobot.event.EventBus;
 
@@ -15,8 +19,11 @@ public class MainActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        EventBus.getDefault().register(this);
-        EventBus.getDefault().register(this, "OnEventTest", EventBus.ThreadMode.PostThread);
+        MyEventBus.getDefault().register(this);
+
+        Glide.load("https://ss0.baidu.com/73x1bjeh1BF3odCf/it/u=3439398034,3720723064&fm=85&s=27D13DC8C6209F4D0E5C7810030090D8")
+                .into((ImageView)findViewById(R.id.imageview));
+      //  MyEventBus.getDefault().register(this, "OnEventTest", EventBus.ThreadMode.PostThread);
     }
 
     public void onEvent(AnyEventType event) {
@@ -33,10 +40,15 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        EventBus.getDefault().unregister(this);
+      //  EventBus.getDefault().unregister(this);
     }
 
     public void click(View view) {
-        startActivity(new Intent(this, SecondActivity.class));
+        if (view.getId()==R.id.btn1){
+            startActivity(new Intent(this, SecondActivity.class));
+        }else if (view.getId()==R.id.btn2){
+            MyEventBus.getDefault().unregister(this);
+        }
+
     }
 }

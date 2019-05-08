@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
+import com.lanlengran.eventbus10test.MyEventBus.MyEventBus;
+
 import de.greenrobot.event.EventBus;
 
 public class SecondActivity extends AppCompatActivity {
@@ -27,8 +29,8 @@ public class SecondActivity extends AppCompatActivity {
 
     private void senMsg() {
         Log.d("MainActivity", "run: 我运行在线程"+Thread.currentThread().getName());
-        EventBus.getDefault().post(new AnyEventType("这是第二个页面传递过来的"));
-        EventBus.getDefault().post(new SecEventType("这是第二个页面传递过来的"));
-        EventBus.getDefault().post("233333");
+        MyEventBus.getDefault().post(new AnyEventType("这是第二个页面传递过来的"));
+        MyEventBus.getDefault().post(new SecEventType("这是第二个页面传递过来的"));
+        MyEventBus.getDefault().post("233333");
     }
 }
